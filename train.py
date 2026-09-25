@@ -10,9 +10,9 @@ PROVA = os.environ.get("PROVA", "").strip()
 
 # ======================= CONFIGURAZIONE =======================
 STAZIONI = {
-    "MONTEVARCHI": "MONTEVARCHI",
-    "SMN": "FIRENZE S. M. NOVELLA",
-    "STATUTO": "FIRENZE STATUTO",
+    "MONTEVARCHI": ("MONTEVARCHI", "MONTEVARCHI"),
+    "SMN": ("FIRENZE", "NOVELLA"),
+    "STATUTO": ("FIRENZE", "STATUTO"),
 }
 
 # 0=lun 1=mar 2=mer 3=gio 4=ven
@@ -57,12 +57,14 @@ def ora(ms):
     return datetime.fromtimestamp(ms / 1000, TZ)
 
 
-def codice_stazione(nome):
-    righe = get(f"autocompletaStazione/{quote(nome)}").text.strip().splitlines()
-    if not righe:
-        raise ValueError(f"Stazione '{nome}' non trovata")
-    return righe[0].split("|")[1]
-
+def codice_stazione(ricerca, parola):
+    righe = get(f"autocompletaStazione/{quote(ricerca)}").text.strip().splitlines()
+    for riga in righe:
+        nome, codice = riga.split("|")
+        if parola.upper() in nome.upper():
+            return codice
+    trovate = [r.split("|")[0] for r in righe]
+    raise ValueError(f"Nessuna stazione con '{parola}' cercando '{ricerca}'. Trovate: {trovate}")
 
 def andamento(cod_origine, numero, data_ms):
     return get(f"andamentoTreno/{cod_origine}/{numero}/{data_ms}").json()
@@ -100,8 +102,8 @@ def prepara(gruppo):
     treni = []
     for da, orario, a in gruppo:
         titolo = f"{orario} {da} > {a}"
-        cod_part = codice_stazione(STAZIONI[da])
-        cod_arr = codice_stazione(STAZIONI[a])
+        cod_part = codice_stazione(*STAZIONI[da])
+        cod_arr = codice_stazione(*STAZIONI[a])
         trovato = trova_treno(cod_part, orario, cod_arr)
         if not trovato:
             invia(titolo, "Non trovo questo treno su ViaggiaTreno: potrebbe essere "
