@@ -1,0 +1,30 @@
+name: Ritardo treno
+on:
+  schedule:
+    # ogni orario c'è due volte (ora legale / ora solare):
+    # lo script lavora solo in quella giusta, l'altra si chiude subito
+    - cron: "35 4,5 * * 1,5"    # lun + ven, andata 7:06
+    - cron: "45 14,15 * * 1"    # lun, ritorno 17:14
+    - cron: "10 6,7 * * 4"      # gio, andata 8:39 / 9:07
+    - cron: "15 16,17 * * 4"    # gio, ritorno 18:47 / 19:14
+    - cron: "45 13,14 * * 5"    # ven, ritorno 16:14 / 16:47
+  workflow_dispatch:
+    inputs:
+      prova:
+        description: "Test su un treno, es: SMN 18:10 MONTEVARCHI (vuoto = normale)"
+        required: false
+        default: ""
+jobs:
+  controlla:
+    runs-on: ubuntu-latest
+    timeout-minutes: 200
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install requests
+      - run: python train.py
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+          PROVA: ${{ github.event.inputs.prova }}
