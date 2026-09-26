@@ -47,10 +47,24 @@ def invia(titolo, testo, priorita="default", tag="train"):
         print("Errore invio notifica:", e)
 
 
+SESSIONE = requests.Session()
+SESSIONE.headers.update({
+    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
+                  "(KHTML, like Gecko) Chrome/124.0 Safari/537.36",
+    "Accept": "application/json, text/plain, */*",
+    "Referer": "http://www.viaggiatreno.it/",
+})
+
+
 def get(path):
-    r = requests.get(f"{BASE}/{path}", timeout=15)
+    for tentativo in range(3):
+        r = SESSIONE.get(f"{BASE}/{path}", timeout=15)
+        if r.status_code != 403:
+            r.raise_for_status()
+            return r
+        print(f"403 da ViaggiaTreno, riprovo tra 10 secondi ({tentativo + 1}/3)")
+        time.sleep(10)
     r.raise_for_status()
-    return r
 
 
 def ora(ms):
